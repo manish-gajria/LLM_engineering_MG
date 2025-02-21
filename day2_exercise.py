@@ -5,7 +5,11 @@ import requests
 from dotenv import load_dotenv
 from bs4 import BeautifulSoup
 from IPython.display import Markdown, display
+
 #from openai import OpenAI
+from openai import OpenAI
+
+ollama_via_openai = OpenAI(base_url='http://localhost:11434/v1', api_key='ollama')
 
 # Constants
 
@@ -13,6 +17,23 @@ OLLAMA_API = "http://localhost:11434/api/chat"
 HEADERS = {"Content-Type": "application/json"}
 MODEL = "llama3.2"
 
+# Load environment variables in a file called .env
+
+load_dotenv(override=True)
+api_key = os.getenv('OPENAI_API_KEY')
+
+# Check the key
+
+if not api_key:
+    print("No API key was found - please head over to the troubleshooting notebook in this folder to identify & fix!")
+elif not api_key.startswith("sk-proj-"):
+    print("An API key was found, but it doesn't start sk-proj-; please check you're using the right key - see troubleshooting notebook")
+elif api_key.strip() != api_key:
+    print("An API key was found, but it looks like it might have space or tab characters at the start or end - please remove them - see troubleshooting notebook")
+else:
+    print("API key found and looks good so far!")
+
+openai = OpenAI()
 
 # A class to represent a Webpage
 # If you're not familiar with Classes, check out the "Intermediate Python" notebook
@@ -71,16 +92,31 @@ def messages_for(website):
 def summarize(url):
     website = Website(url)
     messages=messages_for(website)
-    payload = {
-        "model": MODEL,
-        "messages": messages,
-        "stream": False
-    }
-    response = requests.post(OLLAMA_API, json=payload, headers=HEADERS)    
-    return response.json()['message']['content']
+ 
+#  Method 1: Using payload and direct API call to locally openAI 
+  #  payload = {
+  #      "model": MODEL,
+  #      "messages": messages,
+  #      "stream": False
+  #  }
+  #  response = requests.post(OLLAMA_API, json=payload, headers=HEADERS)    
+  #  return response.json()['message']['content']
+
+#  Method 2: Using payload and openAI library call
+  #    response = ollama_via_openai.chat.completions.create(
+  #       model=MODEL,
+  #       messages=messages
+  #    )
+  #    return response.choices[0].message.content
+
+#Method 3: Using live openAI calls to latest model
+    response = openai.chat.completions.create(
+        model = "gpt-4o-mini",
+        messages = messages_for(website)
+    )
+    return response.choices[0].message.content
 
 # A function to display this nicely in the Jupyter output, using markdown
-
 def display_summary(url):
     summary = summarize(url)
     display(Markdown(summary))
