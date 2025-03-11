@@ -1,1 +1,1 @@
-# LLM_engineering_course
+# LLM_engineering_MG
